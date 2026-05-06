@@ -1,8 +1,0 @@
-
-# repeatmasker
-RepeatMasker -e rmblast -lib aaegTElib.fna -xm -pa 5 -gff VectorBase-61_AaegyptiLVP_AGWG_Genome.fasta -a
-
-# clarity
-clariTE.pl -f gff -dir ./ -LTR aaegTElib.LTRcoordinate.txt -classi aaegTElib.classification.txt -fasta VectorBase-61_AaegyptiLVP_AGWG_Genome.fasta -gene VectorBase-61_AaegyptiLVP_AGWG.gff VectorBase-61_AaegyptiLVP_AGWG_Genome.xm
-
-# RT annotation
