@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# variables 
+sp=$1
+sf=$2
+
+## set up target
+if [ "$sf_lc" = "line" ]; then
+  target="CDD:238827"
+elif [ "$sf_lc" = "gypsy" ]; then
+  target="CDD:238825"
+elif [ "$sf_lc" = "copia" ]; then
+  target="CDD:369488"
+elif [ "$sf_lc" = "belpao" ]; then
+  target="CDD:238822"
+else
+  echo "Unknown sf: $sf (expected LINE|Gypsy|copia|belpao)" >&2
+  exit 1
+fi
+
+## make rpstblastn
+egrep $sf $sp.TElibrary.classification.txt | cut -f 1 > famids
+sed 's,#Unspecified,,' $sp.TEs.fna.out.xm | egrep -w -f famids | awk '{print $5"\t"$6"\t"$7"\t"$10}' | sed 's,\(.*\)\t\(.*\)\t\(.*\)\t\(.*\),samtools faidx '$sp'.genomic.fasta \1:\2-\3 | sed "s;\\(>.*\\);\\1@\4;" ,' | bash > seq.fna
+
+rpstblastn -num_threads 10 -query seq.fna -db ~/bin/transposon_classifier_rfsb/config/RPSTBLASTN_LIB/db_large -evalue 1e-5 -outfmt "6 qseqid qstart qend sstart send slen score qframe sacc" | egrep $target > out.blast
+cat out.blast | awk '{if($5-$4>$6*0.8){print $0}}' | awk '{if($8>0){print $1"\t"$2"\t"$3}}' | sed 's,\(.*\)\t\(.*\)\t\(.*\),samtools faidx seq.fna \1:\2-\3,' | bash | sed 's,>\(.*\):.*,>\1,' > seq.RT.pos.fna
+cat out.blast | awk '{if($5-$4>$6*0.8){print $0}}' | awk '{if($8<0){print $1"\t"$3"\t"$2}}' | sed 's,\(.*\)\t\(.*\)\t\(.*\),samtools faidx seq.fna \1:\2-\3,' | bash | revcomp.pl | sed 's,>\(.*\):.*,>\1,' > seq.RT.neg.fna
+
+cat seq.RT.pos.fna seq.RT.neg.fna > $sp.$sf.RT.fna
+
+# MESHCLUST clustering
+~/bin/Identity/bin/meshclust -d $sp.$sf.RT.fna -o output.txt -t 0.8
+mv output.txt $sp.$sf.RT.meshclust.out
