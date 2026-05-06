@@ -1,0 +1,20 @@
+#!/bin/bash
+
+sp=$1
+sf=$2
+
+## get transposase
+egrep $sf $sp.TElibrary.classification.txt | cut -f 1 > famids
+sed 's,#Unspecified,,' $sp.TEs.fna.out.xm | egrep -w -f famids | awk '{print $5"\t"$6"\t"$7"\t"$10}' | sed 's,\(.*\)\t\(.*\)\t\(.*\)\t\(.*\),samtools faidx '$sp'.genomic.fasta \1:\2-\3 | sed "s;\\(>.*\\);\\1@\4;" ,' | bash > seq.fna
+
+blastx -num_threads 30 -query seq.fna -db RepeatPeps.lib -evalue 1e-5 -outfmt "6 qseqid qstart qend qlen sstart send slen score qframe sacc" | sed 's,#,\t,' | awk '{if($6-$5>($7*0.8)){print $0}}' > out.blast
+cut -f 1 out.blast | sort | uniq | sed 's,\(.*\),egrep -w "\1" out.blast | sort -k 7n\,7n  | head -n 1,' | bash > out.blast.selected
+awk '{if($9>0){print $1"\t"$2"\t"$3"\t"$11}}' out.blast.selected | sed 's,\(.*\)\t\(.*\)\t\(.*\)\t\(.*\),samtools faidx seq.fna \1:\2-\3  ,' | bash > f1
+awk '{if($9<0){print $1"\t"$3"\t"$2"\t"$11}}' out.blast.selected | sed 's,\(.*\)\t\(.*\)\t\(.*\)\t\(.*\),samtools faidx seq.fna \1:\2-\3  ,'  | bash  > f2
+
+cat f1 f2 > $sp.$sf.TIR.fna
+
+# MESHCLUST clustering
+~/bin/Identity/bin/meshclust -d $sp.$sf.TIR.fna -o output.txt -t 0.8
+mv output.txt $sp.$sf.TIR.meshclust.out
+
