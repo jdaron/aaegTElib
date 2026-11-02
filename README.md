@@ -49,5 +49,5 @@ If you use the `aaegTElib` library, the code or the data in this repository, ple
 
 ## Contact
 
-For questions or issues, please open a GitHub issue or contact Josquin Daron (EMAIL).
+For questions or issues, please open a GitHub issue or contact Josquin Daron.
 
